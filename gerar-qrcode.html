@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gerador de QRCode</title>
+  <style>
+    :root {
+      --bg: #f4f6f8;
+      --surface: #ffffff;
+      --text: #1f2937;
+      --border: #e5e7eb;
+      --primary: #2563eb;
+      --success: #16a34a;
+      --disabled: #9ca3af;
+      --radius: 12px;
+      --shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: 24px;
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+    }
+
+    .card {
+      width: 100%;
+      max-width: 420px;
+      padding: 32px;
+      text-align: center;
+      background: var(--surface);
+      border-radius: 16px;
+      box-shadow: var(--shadow);
+    }
+
+    .card h1 {
+      margin-bottom: 24px;
+      font-size: 1.5rem;
+      color: var(--text);
+    }
+
+    .card input,
+    .card select {
+      width: 100%;
+      padding: 12px 16px;
+      font-size: 1rem;
+      color: var(--text);
+      border: 2px solid var(--border);
+      border-radius: var(--radius);
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .card input:focus,
+    .card select:focus { border-color: var(--primary); }
+
+    .card select {
+      margin-top: 16px;
+      cursor: pointer;
+      background: var(--surface);
+    }
+
+    #tamanhoCustom { margin-top: 12px; }
+
+    .buttons {
+      display: flex;
+      gap: 12px;
+      margin-top: 16px;
+    }
+
+    .buttons button {
+      flex: 1;
+      padding: 12px 16px;
+      font-size: 1rem;
+      font-weight: 600;
+      color: #fff;
+      border: none;
+      border-radius: var(--radius);
+      cursor: pointer;
+      transition: opacity 0.2s;
+    }
+
+    .buttons button:hover { opacity: 0.9; }
+
+    #gerar { background: var(--primary); }
+    #baixar { background: var(--success); }
+    #baixar:disabled { background: var(--disabled); cursor: not-allowed; }
+
+    #qr {
+      min-height: 256px;
+      margin-top: 24px;
+      display: grid;
+      place-items: center;
+    }
+
+    #qr canvas,
+    #qr img {
+      max-width: 100%;
+      height: auto;
+    }
+  </style>
+</head>
+<body>
+  <main class="card">
+    <h1>Gerador de QRCode</h1>
+
+    <input id="texto" type="text" placeholder="Digite o texto ou link..." autofocus>
+
+    <select id="tamanho">
+      <option value="128">128 × 128 px</option>
+      <option value="256" selected>256 × 256 px</option>
+      <option value="512">512 × 512 px</option>
+      <option value="1024">1024 × 1024 px</option>
+      <option value="custom">Digitar</option>
+    </select>
+
+    <input id="tamanhoCustom" type="number" min="1" placeholder="Tamanho em pixels (ex.: 300)" hidden>
+
+    <div class="buttons">
+      <button id="gerar" type="button">Gerar</button>
+      <button id="baixar" type="button" disabled>Baixar</button>
+    </div>
+
+    <div id="qr"></div>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+  <script>
+    const $ = (id) => document.getElementById(id);
+    const texto = $('texto');
+    const tamanho = $('tamanho');
+    const tamanhoCustom = $('tamanhoCustom');
+    const qr = $('qr');
+    const baixar = $('baixar');
+
+    tamanho.addEventListener('change', () => {
+      const ehCustom = tamanho.value === 'custom';
+      tamanhoCustom.hidden = !ehCustom;
+      if (ehCustom) tamanhoCustom.focus();
+    });
+
+    const obterTamanho = () => {
+      if (tamanho.value !== 'custom') return Number(tamanho.value);
+
+      const valor = parseInt(tamanhoCustom.value, 10);
+      return Number.isFinite(valor) && valor > 0 ? valor : 256;
+    };
+
+    const gerarQRCode = () => {
+      const valor = texto.value.trim();
+      if (!valor) return texto.focus();
+
+      const tamanhoPx = obterTamanho();
+      qr.innerHTML = '';
+      new QRCode(qr, {
+        text: valor,
+        width: tamanhoPx,
+        height: tamanhoPx,
+        correctLevel: QRCode.CorrectLevel.H,
+      });
+      baixar.disabled = false;
+    };
+
+    const baixarQRCode = () => {
+      const canvas = qr.querySelector('canvas');
+      if (!canvas) return;
+
+      const link = document.createElement('a');
+      link.download = 'qrcode.png';
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+    };
+
+    $('gerar').addEventListener('click', gerarQRCode);
+    baixar.addEventListener('click', baixarQRCode);
+    texto.addEventListener('keydown', ({ key }) => key === 'Enter' && gerarQRCode());
+  </script>
+</body>
+</html>
